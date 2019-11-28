@@ -1,7 +1,10 @@
 # ec2_tools-2000
-Demo project to manage AWS EC2 instances snapshots
+Basic tool to manage AWS EC2 resources such as instances, volumes and snapshots.
 
-## About
+## Supported commands
+* ec2_tool --help
 
-
-## Configuration
+### Required packages
+* Boto3
+* Click
+* Botostubs
