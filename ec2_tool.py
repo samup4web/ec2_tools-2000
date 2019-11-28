@@ -97,7 +97,8 @@ def snapshots():
 
 @snapshots.command('list')
 @click.option('--project', default=None, help="Only snapshots for project (tag Project:<name>)")
-def list_snapshots(project):
+@click.option('--all', 'list_all', default=False, is_flag=True, help="Option to show all snapshots instead of only the latest")
+def list_snapshots(project, list_all):
     """Show EBS snapshots"""
     instances = filter_instances(project)
     for i in instances:
@@ -107,11 +108,15 @@ def list_snapshots(project):
             for s in v.snapshots.all():
                 print(", ".join((
                     s.snapshot_id,
+                    v.volume_id,
+                    i.instance_id,
                     s.description,
                     s.state,
                     s.progress,
                     s.start_time.strftime("%c"),
                 )))
+
+                if s.state == 'completed' and not list_all: break
     return
 
 @snapshots.command('create')
@@ -126,8 +131,14 @@ def create_snapshots(project):
         i.wait_until_stopped()
         v: botostubs.EC2.Ec2Resource.Volume
         for v in i.volumes.all():
-            print("Creating snapshot for instance:{} ...".format(v.volume_id))
-            v.create_snapshot(Description="Script generated snapshot")
+            if has_pending_snapshot(v):
+                print("Skipping: volume {} has a pending snapshot".format(v.volume_id))
+            else:
+                print("Creating snapshot for instance:{} ...".format(v.volume_id))
+                try:
+                    v.create_snapshot(Description="Script generated snapshot")
+                except botocore.exceptions.ClientError as e:
+                    print("Could not create a snapshot for volume: {}. ".format(v.volume_id) + str(e))
     return
 
 
@@ -158,7 +169,12 @@ def filter_instances(project):
         instances = ec2.instances.all()
     return instances
 
-
+def has_pending_snapshot(volume):
+    snapshots = list(volume.snapshots.all())
+    print(snapshots[0].state)
+    b =  snapshots and snapshots[0].state == 'pending'
+    print(b)
+    return b
 # main
 if __name__ == "__main__":
     cli()
