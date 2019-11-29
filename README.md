@@ -2,7 +2,8 @@
 Basic tool to manage AWS EC2 resources such as instances, volumes and snapshots.
 
 ## Running
-ec2_tool.py <config> <command> <subcommand> <options>
+
+`ec2_tool.py <config> <command> <subcommand> <options>`
 
 Use "--help" option for more help.
 
