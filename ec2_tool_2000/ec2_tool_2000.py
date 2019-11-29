@@ -218,21 +218,26 @@ def create_snapshots(project, force, target_instance, age):
             volume_snapshot_age = time_now - last_volume_snapshot_time
             if volume_snapshot_age.days >= int(age):
                 if has_pending_snapshot(v):
-                    print("Skipping: volume {} has a pending snapshot".format(v.volume_id))
+                    print("Skipping: volume {} has a pending snapshot".format(
+                        v.volume_id))
                 else:
                     try:
                         if i.state["Name"] == "running":
                             running_instances.add(i)
-                            print("Stopping EC2 instance: {}".format(i.instance_id))
+                            print("Stopping EC2 instance: {}".format(
+                                i.instance_id))
                             i.stop()
                             i.wait_until_stopped()
-                        print("Creating snapshot for instance:{} ...".format(v.volume_id))
-                        v.create_snapshot(Description="Script generated snapshot")
+                        print("Creating snapshot for instance:{} ...".format(
+                            v.volume_id))
+                        v.create_snapshot(
+                            Description="Script generated snapshot")
                     except botocore.exceptions.ClientError as e:
                         print("Could not create a snapshot for volume: {}. ".format(
                             v.volume_id) + str(e))
             else:
-                print("Skipping: A snapshot of volume '{}' has been created in the last '{}' days".format(v.volume_id, age))
+                print("Skipping: A snapshot of volume '{}' has been created in the last '{}' days".format(
+                    v.volume_id, age))
 
     for i in running_instances:
         print("Re-starting EC2 instance '{}'".format(i.instance_id))
@@ -289,6 +294,7 @@ def filter_instances(project, target_instance):
 def has_pending_snapshot(volume):
     snapshots = list(volume.snapshots.all())
     return snapshots and snapshots[0].state == 'pending'
+
 
 def get_last_snapshot(volume):
     snapshots = list(volume.snapshots.all())
