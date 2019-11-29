@@ -25,7 +25,10 @@ def cli(profile):
         print("Using 'default' profile.")
 
     global ec2
-    ec2 = session.resource('ec2')
+    try:
+        ec2 = session.resource('ec2')
+    except:
+        sys.exit("AWS endpoint error")
     return
 
 

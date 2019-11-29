@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='ec2_tool_2000',
-    version='0.2',
+    version='0.3',
     author="Samuel O. Idowu",
     author_email="samup4web@yahoo.com",
     description="EC2_tool_2000 is a tool to manage EC2 resources",
