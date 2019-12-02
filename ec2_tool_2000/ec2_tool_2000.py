@@ -52,17 +52,20 @@ def list_instances(project, target_instance):
     "List EC2 instances"
     instances = filter_instances(project, target_instance)
     # print out all instances
-    i: botostubs.EC2.Ec2Resource.Instance
-    for i in instances:
-        tags = {t['Key']: t['Value'] for t in i.tags or []}
-        print(", ".join((
-            i.instance_id,
-            i.instance_type,
-            i.placement['AvailabilityZone'],
-            i.state['Name'],
-            i.public_dns_name,
-            tags.get('Project', '<no-project>')
-        )))
+    try:
+        i: botostubs.EC2.Ec2Resource.Instance
+        for i in instances:
+            tags = {t['Key']: t['Value'] for t in i.tags or []}
+            print(", ".join((
+                i.instance_id,
+                i.instance_type,
+                i.placement['AvailabilityZone'],
+                i.state['Name'],
+                i.public_dns_name,
+                tags.get('Project', '<no-project>')
+            )))
+    except botocore.exceptions.ClientError as e:
+        print("Invalid InstanceID found. " + str(e))
     return
 
 
@@ -74,17 +77,20 @@ def stop_instances(project, force, target_instance):
     "Stop EC2 instances"
     safeguard_action(project, target_instance, force)
     instances = filter_instances(project, target_instance)
-    i: botostubs.EC2.Ec2Resource.Instance
-    for i in instances:
-        if not i.state['Name'] == 'stopped':
-            try:
-                print("Stopping {0}...".format(i.instance_id))
-                i.stop()
-            except botocore.exceptions.ClientError as e:
-                print("Could not stop {}.".format(i.id) + str(e))
-                continue
-        else:
-            print("Instance '{}' already in a stopped state".format(i.instance_id))
+    try:
+        i: botostubs.EC2.Ec2Resource.Instance
+        for i in instances:
+            if not i.state['Name'] == 'stopped':
+                try:
+                    print("Stopping {0}...".format(i.instance_id))
+                    i.stop()
+                except botocore.exceptions.ClientError as e:
+                    print("Could not stop {}.".format(i.id) + str(e))
+                    continue
+            else:
+                print("Instance '{}' already in a stopped state".format(i.instance_id))
+    except botocore.exceptions.ClientError as e:
+        print("Invalid InstanceID found. " + str(e))
     return
 
 
@@ -96,17 +102,20 @@ def start_instances(project, force, target_instance):
     "Start EC2 instances"
     safeguard_action(project, target_instance, force)
     instances = filter_instances(project, target_instance)
-    i: botostubs.EC2.Ec2Resource.Instance
-    for i in instances:
-        if not i.state["Name"] == "running":
-            try:
-                print("Starting {0}...".format(i.instance_id))
-                i.start()
-            except botocore.exceptions.ClientError as e:
-                print("Could not start {}. ".format(i.id) + str(e))
-                continue
-        else:
-            print("Instance '{}' is already in running state".format(i.instance_id))
+    try:
+        i: botostubs.EC2.Ec2Resource.Instance
+        for i in instances:
+            if not i.state["Name"] == "running":
+                try:
+                    print("Starting {0}...".format(i.instance_id))
+                    i.start()
+                except botocore.exceptions.ClientError as e:
+                    print("Could not start {}. ".format(i.id) + str(e))
+                    continue
+            else:
+                print("Instance '{}' is already in running state".format(i.instance_id))
+    except botocore.exceptions.ClientError as e:
+        print("Invalid InstanceID found. " + str(e))
     return
 
 
@@ -118,14 +127,16 @@ def reboot_instances(project, force, target_instance):
     "Reboot EC2 instances"
     safeguard_action(project, target_instance, force)
     instances = filter_instances(project, target_instance)
-    i: botostubs.EC2.Ec2Resource.Instance
-    for i in instances:
-        if i.state['Name'] == 'running':
-            print("Rebooting instance {}".format(i.instance_id))
-            i.reboot()
-        else:
-            print("Reboot is only valid for instances in running state")
-
+    try:
+        i: botostubs.EC2.Ec2Resource.Instance
+        for i in instances:
+            if i.state['Name'] == 'running':
+                print("Rebooting instance {}".format(i.instance_id))
+                i.reboot()
+            else:
+                print("Reboot is only valid for instances in running state")
+    except botocore.exceptions.ClientError as e:
+        print("Invalid InstanceID found. " + str(e))
 
 """
 __   _____  _   _   _ __  __ ___ ___
@@ -146,17 +157,20 @@ def volumes():
 def list_volumes(project, target_instance):
     """Show EBS volumes"""
     instances = filter_instances(project, target_instance)
-    i: botostubs.EC2.Ec2Resource.Instance
-    for i in instances:
-        v: botostubs.EC2.Ec2Resource.Volume
-        for v in i.volumes.all():
-            print(", ".join((
-                v.volume_id,
-                i.instance_id,
-                v.state,
-                str(v.size) + "GiB",
-                v.encrypted and "Encrypted" or "Not Encrypted"
-            )))
+    try:
+        i: botostubs.EC2.Ec2Resource.Instance
+        for i in instances:
+            v: botostubs.EC2.Ec2Resource.Volume
+            for v in i.volumes.all():
+                print(", ".join((
+                    v.volume_id,
+                    i.instance_id,
+                    v.state,
+                    str(v.size) + "GiB",
+                    v.encrypted and "Encrypted" or "Not Encrypted"
+                )))
+    except botocore.exceptions.ClientError as e:
+        print("Invalid InstanceID found. " + str(e))
     return
 
 
@@ -181,24 +195,27 @@ def snapshots():
 def list_snapshots(project, list_all, target_instance):
     """Show EBS snapshots"""
     instances = filter_instances(project, target_instance)
-    i: botostubs.EC2.Ec2Resource.Instance
-    for i in instances:
-        v: botostubs.EC2.Ec2Resource.Volume
-        for v in i.volumes.all():
-            s: botostubs.EC2.Ec2Resource.Snapshot
-            for s in v.snapshots.all():
-                print(", ".join((
-                    s.snapshot_id,
-                    v.volume_id,
-                    i.instance_id,
-                    s.description,
-                    s.state,
-                    s.progress,
-                    s.start_time.strftime("%c"),
-                )))
+    try:
+        i: botostubs.EC2.Ec2Resource.Instance
+        for i in instances:
+            v: botostubs.EC2.Ec2Resource.Volume
+            for v in i.volumes.all():
+                s: botostubs.EC2.Ec2Resource.Snapshot
+                for s in v.snapshots.all():
+                    print(", ".join((
+                        s.snapshot_id,
+                        v.volume_id,
+                        i.instance_id,
+                        s.description,
+                        s.state,
+                        s.progress,
+                        s.start_time.strftime("%c"),
+                    )))
 
-                if s.state == 'completed' and not list_all:
-                    break
+                    if s.state == 'completed' and not list_all:
+                        break
+    except botocore.exceptions.ClientError as e:
+        print("Invalid InstanceID found. " + str(e))
     return
 
 
@@ -212,39 +229,42 @@ def create_snapshots(project, force, target_instance, age):
     safeguard_action(project, target_instance, force)
     instances = filter_instances(project, target_instance)
     running_instances = set()
-    i: botostubs.EC2.Ec2Resource.Instance
-    for i in instances:
-        v: botostubs.EC2.Ec2Resource.Volume
-        for v in i.volumes.all():
-            time_now = datetime.now(timezone.utc)
-            last_volume_snapshot_time = get_last_snapshot(v)
-            volume_snapshot_age = time_now - last_volume_snapshot_time
-            if volume_snapshot_age.days >= int(age):
-                if has_pending_snapshot(v):
-                    print("Skipping: volume {} has a pending snapshot".format(
-                        v.volume_id))
-                else:
-                    try:
-                        if i.state["Name"] == "running":
-                            running_instances.add(i)
-                            print("Stopping EC2 instance: {}".format(
-                                i.instance_id))
-                            i.stop()
-                            i.wait_until_stopped()
-                        print("Creating snapshot for instance:{} ...".format(
+    try:
+        i: botostubs.EC2.Ec2Resource.Instance
+        for i in instances:
+            v: botostubs.EC2.Ec2Resource.Volume
+            for v in i.volumes.all():
+                time_now = datetime.now(timezone.utc)
+                last_volume_snapshot_time = get_last_snapshot(v)
+                volume_snapshot_age = time_now - last_volume_snapshot_time
+                if volume_snapshot_age.days >= int(age):
+                    if has_pending_snapshot(v):
+                        print("Skipping: volume {} has a pending snapshot".format(
                             v.volume_id))
-                        v.create_snapshot(
-                            Description="Script generated snapshot")
-                    except botocore.exceptions.ClientError as e:
-                        print("Could not create a snapshot for volume: {}. ".format(
-                            v.volume_id) + str(e))
-            else:
-                print("Skipping: A snapshot of volume '{}' has been created in the last '{}' days".format(
-                    v.volume_id, age))
+                    else:
+                        try:
+                            if i.state["Name"] == "running":
+                                running_instances.add(i)
+                                print("Stopping EC2 instance: {}".format(
+                                    i.instance_id))
+                                i.stop()
+                                i.wait_until_stopped()
+                            print("Creating snapshot for instance:{} ...".format(
+                                v.volume_id))
+                            v.create_snapshot(
+                                Description="Script generated snapshot")
+                        except botocore.exceptions.ClientError as e:
+                            print("Could not create a snapshot for volume: {}. ".format(
+                                v.volume_id) + str(e))
+                else:
+                    print("Skipping: A snapshot of volume '{}' has been created in the last '{}' days".format(
+                        v.volume_id, age))
 
-    for i in running_instances:
-        print("Re-starting EC2 instance '{}'".format(i.instance_id))
-        i.start()
+        for i in running_instances:
+            print("Re-starting EC2 instance '{}'".format(i.instance_id))
+            i.start()
+    except botocore.exceptions.ClientError as e:
+        print("Invalid InstanceID found. " + str(e))
 
     return
 
@@ -257,14 +277,17 @@ def delete_snapshots(project, force, target_instance):
     """Delete EBS snapshots"""
     safeguard_action(project, target_instance, force)
     instances = filter_instances(project, target_instance)
-    i: botostubs.EC2.Ec2Resource.Instance
-    for i in instances:
-        v: botostubs.EC2.Ec2Resource.Volume
-        for v in i.volumes.all():
-            s: botostubs.EC2.Ec2Resource.Snapshot
-            for s in v.snapshots.all():
-                print("Delete snapshot for instance:{} ...".format(v.volume_id))
-                s.delete()
+    try:
+        i: botostubs.EC2.Ec2Resource.Instance
+        for i in instances:
+            v: botostubs.EC2.Ec2Resource.Volume
+            for v in i.volumes.all():
+                s: botostubs.EC2.Ec2Resource.Snapshot
+                for s in v.snapshots.all():
+                    print("Delete snapshot for instance:{} ...".format(v.volume_id))
+                    s.delete()
+    except botocore.exceptions.ClientError as e:
+        print("Invalid InstanceID found. " + str(e))
     return
 
 
